@@ -5,7 +5,7 @@ import pandas as pd
 def detect_table_start(df):
     """
     Detect the starting row of the table by finding the first row
-    that is completely filled to the right (i.e., no nulls up to the last used column).
+    that is completely filled within the non-null columns (i.e., no nulls from the first to the last non-null column).
 
     Args:
         df (pd.DataFrame): The DataFrame representing the entire sheet.
@@ -13,18 +13,23 @@ def detect_table_start(df):
     Returns:
         int or None: The index of the header row if found, else None.
     """
-    # Determine the last column with any non-null value
-    non_null_counts = df.notnull().sum(axis=0)
-    last_col = non_null_counts.idxmax()
-    last_col_index = df.columns.get_loc(last_col)
+    # Identify columns that have any non-null values
+    non_null_columns = df.columns[df.notnull().any(axis=0)]
+    if len(non_null_columns) == 0:
+        return None  # No non-null columns found
 
-    # Iterate through each row to find the first fully populated row up to last_col_index
+    # Get the indices of the leftmost and rightmost non-null columns
+    left_col_index = df.columns.get_loc(non_null_columns[0])
+    right_col_index = df.columns.get_loc(non_null_columns[-1])
+
+    # Iterate through each row to find the first fully populated row within the non-null column range
     for idx, row in df.iterrows():
-        row_slice = row.iloc[:last_col_index + 1]
+        row_slice = row.iloc[left_col_index:right_col_index + 1]
         if row_slice.notnull().all():
             return idx
 
     return None
+
 
 def get_table_region(df):
     """
