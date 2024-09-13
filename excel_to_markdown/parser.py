@@ -1,5 +1,5 @@
-import re
 from .utils import column_letter_to_index
+
 
 def parse_columns(cols_input, df):
     """

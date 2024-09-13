@@ -1,6 +1,7 @@
 # excel_to_markdown/markdown_generator.py
 import pandas as pd
 
+
 def dataframe_to_markdown(df):
     """
     Convert a pandas DataFrame to a Markdown table.
@@ -11,6 +12,8 @@ def dataframe_to_markdown(df):
     Returns:
         str: Markdown-formatted table.
     """
+    if df.empty:
+        return ""
     # Generate the header row
     markdown = "| " + " | ".join(df.columns) + " |\n"
     # Generate the separator row

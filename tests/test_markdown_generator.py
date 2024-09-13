@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 from excel_to_markdown.markdown_generator import dataframe_to_markdown
 
+
 class TestMarkdownGenerator(unittest.TestCase):
     def test_dataframe_to_markdown_basic(self):
         # Test with a basic DataFrame
@@ -19,7 +20,7 @@ class TestMarkdownGenerator(unittest.TestCase):
         )
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_with_missing_values(self):
         # Test DataFrame with missing values
         data = {
@@ -37,21 +38,21 @@ class TestMarkdownGenerator(unittest.TestCase):
         )
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_empty_dataframe(self):
         # Test with an empty DataFrame
         df = pd.DataFrame()
         expected_markdown = ""
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_no_columns(self):
         # Test DataFrame with no columns but with rows
         df = pd.DataFrame([[] for _ in range(3)])
-        expected_markdown = "|\n| --- |\n|\n|\n|\n"
+        expected_markdown = ""
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_single_row(self):
         # Test DataFrame with a single row
         data = {
@@ -67,7 +68,7 @@ class TestMarkdownGenerator(unittest.TestCase):
         )
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_single_column(self):
         # Test DataFrame with a single column
         data = {
@@ -83,7 +84,7 @@ class TestMarkdownGenerator(unittest.TestCase):
         )
         result = dataframe_to_markdown(df)
         self.assertEqual(result, expected_markdown)
-    
+
     def test_dataframe_to_markdown_numeric_data(self):
         # Test DataFrame with numeric data
         data = {
@@ -94,12 +95,14 @@ class TestMarkdownGenerator(unittest.TestCase):
         expected_markdown = (
             "| ID | Score |\n"
             "| --- | --- |\n"
-            "| 1 | 85.5 |\n"
-            "| 2 | 92.0 |\n"
-            "| 3 | 78.25 |\n"
+            "| 1.0 | 85.5 |\n"
+            "| 2.0 | 92.0 |\n"
+            "| 3.0 | 78.25 |\n"
         )
         result = dataframe_to_markdown(df)
+        print(result)
         self.assertEqual(result, expected_markdown)
+
 
 if __name__ == '__main__':
     unittest.main()

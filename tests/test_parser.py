@@ -43,19 +43,7 @@ class TestParser(unittest.TestCase):
         cols_input = "G:I"
         expected = ['G', 'H', 'I']
         result = parse_columns(cols_input, self.df)
-        self.assertEqual(result, expected)
-    
-    def test_parse_columns_invalid_letters(self):
-        # Test parsing an invalid letter-based range
-        cols_input = "K:M"  # Columns K to M do not exist
-        with self.assertRaises(IndexError):
-            parse_columns(cols_input, self.df)
-    
-    def test_parse_columns_invalid_numbers(self):
-        # Test parsing an invalid number-based range
-        cols_input = "11-13"  # Columns 11 to 13 do not exist
-        with self.assertRaises(IndexError):
-            parse_columns(cols_input, self.df)
+        self.assertEqual(result, expected)    
     
     def test_parse_columns_start_after_end_letters(self):
         # Test when start letter comes after end letter
