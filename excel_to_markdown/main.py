@@ -1,10 +1,16 @@
+# excel_to_markdown/main.py
+
 import pandas as pd
 import sys
 from pathlib import Path
 
+from .detector import get_table_region
+from .markdown_generator import dataframe_to_markdown
+from .utils import create_output_filename
+
 def excel_to_markdown(excel_file, sheet_name=0):
     """
-    Convert a specific sheet in an Excel file to a Markdown table.
+    Convert a specific sheet in an Excel file to a Markdown table interactively.
 
     Args:
         excel_file (Path): The path to the Excel file.
@@ -13,22 +19,35 @@ def excel_to_markdown(excel_file, sheet_name=0):
     Returns:
         str: The Markdown representation of the sheet.
     """
-    # Read the specified sheet from the Excel file
-    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+    # Read the entire sheet without specifying headers or columns
+    df_full = pd.read_excel(excel_file, sheet_name=sheet_name, header=None, engine='openpyxl')
 
-    # Start building the Markdown table
-    markdown = "| " + " | ".join(df.columns) + " |\n"
-    markdown += "| " + " | ".join(["---"] * len(df.columns)) + " |\n"
+    # Detect table region
+    headers_row, usecols = get_table_region(df_full)
 
-    # Add each row of the DataFrame to the Markdown table
-    for _, row in df.iterrows():
-        markdown += "| " + " | ".join(str(cell) for cell in row) + " |\n"
+    # Read the table with detected or user-specified parameters
+    df = pd.read_excel(
+        excel_file,
+        sheet_name=sheet_name,
+        header=headers_row,
+        usecols=usecols,
+        engine='openpyxl'
+    )
+
+    # Drop completely empty rows
+    df.dropna(how='all', inplace=True)
+
+    # Reset index after dropping rows
+    df.reset_index(drop=True, inplace=True)
+
+    # Generate the markdown table
+    markdown = dataframe_to_markdown(df)
 
     return markdown
 
 def process_file(input_file, output_dir):
     """
-    Process an Excel file by converting each of its sheets to separate Markdown files.
+    Process an Excel file by converting each of its sheets to separate Markdown files interactively.
 
     Args:
         input_file (Path): The path to the Excel file.
@@ -36,19 +55,17 @@ def process_file(input_file, output_dir):
     """
     try:
         # Load the Excel file to get all sheet names
-        excel = pd.ExcelFile(input_file)
+        excel = pd.ExcelFile(input_file, engine='openpyxl')
         sheet_names = excel.sheet_names
 
         # Iterate through each sheet in the Excel file
         for sheet in sheet_names:
-            # Convert the current sheet to Markdown
+            print(f"\nProcessing sheet: '{sheet}' in file '{input_file.name}'")
+            # Convert the current sheet to Markdown interactively
             markdown = excel_to_markdown(input_file, sheet)
 
-            # Sanitize the sheet name to create a valid filename
-            safe_sheet_name = "".join(c if c.isalnum() or c in (' ', '_') else "_" for c in sheet).strip().replace(" ", "_")
-
-            # Create the output filename by appending the sheet name
-            output_file = output_dir / f"{input_file.stem}_{safe_sheet_name}.md"
+            # Create the output filename using utility function
+            output_file = create_output_filename(input_file, sheet, output_dir)
 
             # Write the Markdown content to the output file
             with open(output_file, 'w', encoding='utf-8') as f:
@@ -61,10 +78,10 @@ def process_file(input_file, output_dir):
 
 def main():
     """
-    The main function to execute the script. It parses command-line arguments and processes Excel files.
+    The main function to execute the script. It parses command-line arguments and processes Excel files interactively.
     """
     if len(sys.argv) < 2:
-        print("Usage: python script.py <input_directory> <output_directory>")
+        print("Usage: python -m excel_to_markdown.main <input_directory> <output_directory>")
         sys.exit(1)
 
     # Define input and output directories from command-line arguments
@@ -75,7 +92,12 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Iterate through all Excel files in the input directory
-    for excel_file in input_dir.glob('*.xlsx'):
+    excel_files = list(input_dir.glob('*.xlsx')) + list(input_dir.glob('*.xls'))
+    if not excel_files:
+        print(f"No Excel files found in {input_dir}.")
+        sys.exit(1)
+
+    for excel_file in excel_files:
         process_file(excel_file, output_dir)
 
 if __name__ == "__main__":
