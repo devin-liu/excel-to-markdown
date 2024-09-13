@@ -38,7 +38,7 @@ The script will generate a Markdown file with the same name as the input Excel f
 ## Example
 
 ```
-python script.py example.xlsx Sheet1
+poetry run excel-to-markdown data/input data/output
 ```
 
 This command will create a file named `example.md` containing the Markdown table representation of the data in `Sheet1` of `example.xlsx`.
