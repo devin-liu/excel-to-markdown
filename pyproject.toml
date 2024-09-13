@@ -17,3 +17,7 @@ excel-to-markdown = "excel_to_markdown.main:main"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+pytest-mock = "^3.0"
+
