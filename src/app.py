@@ -10,8 +10,9 @@ input_files = [f for f in os.listdir(
 # Display the list of files using Streamlit
 st.header("Excel Files in data/input")
 if input_files:
-    for file in input_files:
-        st.write(f"- {file}")
+    for file in input_files:        
+        st.link_button(f"Preview {file}", f"/preview?file={file}")
+
 else:
     st.write("No Excel files found in the input directory.")
 
