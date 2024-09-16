@@ -70,6 +70,9 @@ def test_process_file_auto_detect(sample_excel_file, output_directory, mocker):
         "| Alice | 30 | New York |\n"
         "| Bob | 25 | Los Angeles |\n"
     )
+    print("--content--")
+    print(content)
+    
     assert content == expected_content_sheet1
     
     # Since Sheet2 lacks a fully populated header row, it should prompt for input

@@ -38,6 +38,39 @@ class TestDetector(unittest.TestCase):
         result = detect_table_start(df)
         self.assertEqual(result, expected_row)
 
+    def test_detect_table_start_with_none_first_row(self):
+        data = {
+            'A': [None, 'Name', 'Alice', 'Bob'],
+            'B': [None, 'Age', 30, 25],
+            'C': [None, 'City', 'New York', 'Los Angeles']
+        }
+        df = pd.DataFrame(data)
+        expected_row = 1
+        result = detect_table_start(df)
+        self.assertEqual(result, expected_row)
+
+    def test_detect_table_start_with_second_row_start(self):
+        data = {
+            'A': [None, None, 'Name', 'Alice', 'Bob'],
+            'B': [None, None, 'Age', 30, 25],
+            'C': [None, None, 'City', 'New York', 'Los Angeles']
+        }
+        df = pd.DataFrame(data)
+        expected_row = 2
+        result = detect_table_start(df)
+        self.assertEqual(result, expected_row)
+
+# test for this case
+
+#    # Create sample data for two sheets
+#         sheet1_data = {
+#             'A': [None, 'Name', 'Alice', 'Bob'],
+#             'B': [None, 'Age', 30, 25],
+#             'C': [None, 'City', 'New York', 'Los Angeles']
+#         }
+
+# finds Name, Age, City
+
 
 if __name__ == '__main__':
     unittest.main()

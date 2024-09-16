@@ -5,13 +5,7 @@ import pandas as pd
 def detect_table_start(df):
     """
     Detect the starting row of the table by finding the first row
-    that is completely filled within the non-null columns (i.e., no nulls from the first to the last non-null column).
-
-    Args:
-        df (pd.DataFrame): The DataFrame representing the entire sheet.
-
-    Returns:
-        int or None: The index of the header row if found, else None.
+    that is completely filled within the non-null columns.
     """
     # Identify columns that have any non-null values
     non_null_columns = df.columns[df.notnull().any(axis=0)]
@@ -25,7 +19,7 @@ def detect_table_start(df):
     # Iterate through each row to find the first fully populated row within the non-null column range
     for idx, row in df.iterrows():
         row_slice = row.iloc[left_col_index:right_col_index + 1]
-        if row_slice.notnull().all():
+        if row_slice.notnull().all() and not row_slice.astype(str).str.strip().eq('').any():
             return idx
 
     return None
@@ -33,26 +27,18 @@ def detect_table_start(df):
 
 def get_table_region(df):
     """
-    Attempt to detect the table region. If unsuccessful, prompt the user for input.
-
-    Args:
-        df (pd.DataFrame): The DataFrame representing the entire sheet.
-
-    Returns:
-        tuple: (headers_row (int), usecols (list))
+    Improved logic to detect all relevant columns based on the presence of header names and non-null values.
     """
     start_row = detect_table_start(df)
     if start_row is not None:
         print(f"Automatically detected table starting at row {start_row + 1}.")
-        # Detect columns with data up to the last used column
-        non_null_counts = df.notnull().sum(axis=0)
-        last_col = non_null_counts.idxmax()
-        last_col_index = df.columns.get_loc(last_col)
-        usecols = df.columns[:last_col_index + 1].tolist()
-        return start_row, usecols
+        # Consider all columns that have at least a certain percentage of non-null values as part of the table
+        threshold = 0.5  # At least 50% non-null to be considered
+        valid_cols = [col for col in df.columns if df[col].notnull().mean() > threshold]
+        return start_row, valid_cols
     else:
         print("Automatic table detection failed.")
-        # Prompt user for input
+        # Manual detection as fallback
         while True:
             try:
                 headers_row = int(input("Enter the header row number (1-based index): ")) - 1
@@ -62,3 +48,4 @@ def get_table_region(df):
                 return headers_row, usecols
             except Exception as e:
                 print(f"Invalid input: {e}. Please try again.")
+
