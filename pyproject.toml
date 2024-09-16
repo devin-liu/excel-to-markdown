@@ -9,9 +9,12 @@ readme = "README.md"
 python = "^3.12"
 pandas = "^2.2.2"
 openpyxl = "^3.1.5"
+streamlit = "^1.38.0"
 
 [tool.poetry.scripts]
 excel-to-markdown = "excel_to_markdown.main:main"
+app = "run_streamlit:main"
+
 
 [build-system]
 requires = ["poetry-core"]

@@ -102,16 +102,27 @@ poetry shell
 
 2. **Output Directory:** The converted Markdown files will be saved in the `data/output` directory by default. If this directory doesn't exist, the script will create it.
 
-### **Running the Script**
+- **`data/input`**: Directory containing your Excel files.
+- **`data/output`**: (Optional) Directory where Markdown files will be saved. If not specified, an `output` folder will be created inside the input directory.
 
-Execute the main script using the following command:
+
+### **Running the Localhost Server**
+
+You can also start a localhost server for real-time editing using:
+
+```bash
+poetry run app
+```
+
+This will start a server on your localhost, allowing you to make edits to your spreadsheets locally and see immediate updates.
+
+### **Running the CLI Script** 
+
+Execute the main script over CLI using the following command:
 
 ```bash
 python -m excel_to_markdown.main data/input data/output
 ```
-
-- **`data/input`**: Directory containing your Excel files.
-- **`data/output`**: (Optional) Directory where Markdown files will be saved. If not specified, an `output` folder will be created inside the input directory.
 
 **Example:**
 
