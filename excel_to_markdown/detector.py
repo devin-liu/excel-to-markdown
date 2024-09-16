@@ -2,6 +2,7 @@
 
 import pandas as pd
 
+
 def detect_table_start(df):
     """
     Detect the starting row of the table by finding the first row
@@ -33,19 +34,21 @@ def get_table_region(df):
     if start_row is not None:
         print(f"Automatically detected table starting at row {start_row + 1}.")
         # Consider all columns that have at least a certain percentage of non-null values as part of the table
-        threshold = 0.5  # At least 50% non-null to be considered
-        valid_cols = [col for col in df.columns if df[col].notnull().mean() > threshold]
+        threshold = 0.49  # At least 49% non-null to be considered
+        valid_cols = [
+            col for col in df.columns if df[col].notnull().mean() > threshold]
         return start_row, valid_cols
     else:
         print("Automatic table detection failed.")
         # Manual detection as fallback
         while True:
             try:
-                headers_row = int(input("Enter the header row number (1-based index): ")) - 1
-                cols_input = input("Enter the columns to include (e.g., A:D or 1-4): ")
+                headers_row = int(
+                    input("Enter the header row number (1-based index): ")) - 1
+                cols_input = input(
+                    "Enter the columns to include (e.g., A:D or 1-4): ")
                 from .parser import parse_columns
                 usecols = parse_columns(cols_input, df)
                 return headers_row, usecols
             except Exception as e:
                 print(f"Invalid input: {e}. Please try again.")
-
