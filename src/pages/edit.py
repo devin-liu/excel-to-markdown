@@ -50,7 +50,7 @@ def edit_excel():
             fit_columns_on_grid_load=True,
             allow_unsafe_jscode=True,
             reload_data=False,
-            key=f"{current_sheet}_aggrid"
+            key=f"{current_sheet}_aggrid_{st.session_state.get('aggrid_key', 0)}"
         )
 
         selected_rows = grid_response['selected_rows']
@@ -104,14 +104,14 @@ def edit_excel():
                 f"Start Row for {current_sheet}",
                 min_value=0,
                 max_value=len(df)-1,
-                value=start_row,
+                value=int(start_row),
                 key=f"{start_row_key}_input"
             )
             end_row_input = st.number_input(
                 f"End Row for {current_sheet}",
-                min_value=start_row_input,
+                min_value=int(start_row_input),
                 max_value=len(df)-1,
-                value=end_row,
+                value=int(end_row),
                 key=f"{end_row_key}_input"
             )
         with col2:
@@ -119,14 +119,14 @@ def edit_excel():
                 f"Start Column for {current_sheet}",
                 min_value=0,
                 max_value=len(df.columns)-1,
-                value=start_col,
+                value=int(start_col),
                 key=f"{start_col_key}_input"
             )
             end_col_input = st.number_input(
                 f"End Column for {current_sheet}",
-                min_value=start_col_input,
+                min_value=int(start_col_input),
                 max_value=len(df.columns)-1,
-                value=end_col,
+                value=int(end_col),
                 key=f"{end_col_key}_input"
             )
 
@@ -151,6 +151,9 @@ def edit_excel():
             )
             grid_options = gb.build()
 
+            # Increment the aggrid_key to ensure a unique key on re-render
+            st.session_state['aggrid_key'] = st.session_state.get('aggrid_key', 0) + 1
+
             # Display the grid with updated selection
             grid_response = AgGrid(
                 df,
@@ -160,7 +163,7 @@ def edit_excel():
                 fit_columns_on_grid_load=True,
                 allow_unsafe_jscode=True,
                 reload_data=True,
-                key=f"{current_sheet}_aggrid"
+                key=f"{current_sheet}_aggrid_{st.session_state['aggrid_key']}"
             )
 
         if st.button(f"View markdown preview of {current_sheet}"):
