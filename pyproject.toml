@@ -10,6 +10,7 @@ python = "^3.12"
 pandas = "^2.2.2"
 openpyxl = "^3.1.5"
 streamlit = "^1.38.0"
+streamlit-aggrid = "^1.0.5"
 
 [tool.poetry.scripts]
 excel-to-markdown = "excel_to_markdown.main:main"

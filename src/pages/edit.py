@@ -1,15 +1,13 @@
 import streamlit as st
-from utils import load_excel_file, get_selected_range
+from utils import load_excel_file
 from excel_to_markdown.markdown_generator import dataframe_to_markdown
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
+import pandas as pd
 
 
 def edit_excel():
     file_name = st.query_params.get("file")
     sheet_name = st.query_params.get("sheet")
-    start_row = int(st.query_params.get("start_row", 0))
-    end_row = int(st.query_params.get("end_row", 0))
-    start_col = int(st.query_params.get("start_col", 0))
-    end_col = int(st.query_params.get("end_col", 0))
 
     wb = load_excel_file(file_name)
     if wb is None:
@@ -22,30 +20,79 @@ def edit_excel():
 
         st.subheader(f"{current_sheet}")
 
-        edited_df = st.data_editor(
+        # Initialize session state keys
+        start_row_key = f"{current_sheet}_start_row"
+        end_row_key = f"{current_sheet}_end_row"
+        start_col_key = f"{current_sheet}_start_col"
+        end_col_key = f"{current_sheet}_end_col"
+
+        # Initialize selection keys if not present
+        if start_row_key not in st.session_state:
+            st.session_state[start_row_key] = 0
+        if end_row_key not in st.session_state:
+            st.session_state[end_row_key] = len(df) - 1
+        if start_col_key not in st.session_state:
+            st.session_state[start_col_key] = 0
+        if end_col_key not in st.session_state:
+            st.session_state[end_col_key] = len(df.columns) - 1
+
+        # Build grid options with selection
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_selection(selection_mode='multiple', use_checkbox=True)
+        grid_options = gb.build()
+
+        # Display the grid
+        grid_response = AgGrid(
             df,
-            use_container_width=True,
-            num_rows="dynamic",
-            disabled=True,  # Prevent editing to focus on selection
-            hide_index=False,
-            column_config={col: st.column_config.Column(
-                required=True) for col in df.columns},
-            key=f"{current_sheet}_data_editor"  # Set a unique key
+            gridOptions=grid_options,
+            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+            update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.VALUE_CHANGED,
+            fit_columns_on_grid_load=True,
+            allow_unsafe_jscode=True,
+            reload_data=False,
+            key=f"{current_sheet}_aggrid"
         )
 
-        # Get the selected rows and columns using the new key
-        selected_rows = st.session_state.get(
-            f"{current_sheet}_data_editor_selected_rows", [])
-        selected_columns = st.session_state.get(
-            f"{current_sheet}_data_editor_selected_columns", [])
+        selected_rows = grid_response['selected_rows']
 
-        # Ensure valid values for start_row, end_row, start_col, end_col
-        if not selected_rows:
-            start_row = 0
-            end_row = len(df) - 1
-        if not selected_columns:
-            start_col = 0
-            end_col = len(df.columns) - 1
+        # Initialize selected_indices
+        selected_indices = []
+
+        if isinstance(selected_rows, pd.DataFrame):
+            # selected_rows is a DataFrame
+            if not selected_rows.empty:
+                selected_indices = selected_rows.index.tolist()
+        elif isinstance(selected_rows, list):
+            # selected_rows is a list
+            if len(selected_rows) > 0:
+                selected_indices = [
+                    int(row['_selectedRowNodeInfo']['nodeRowIndex']) for row in selected_rows]
+        else:
+            # Handle other possible types or set selected_indices to empty
+            selected_indices = []
+
+        # Synchronize selections to session state
+        selection_changed = False
+        if selected_indices:
+            new_start_row = min(selected_indices)
+            new_end_row = max(selected_indices)
+            if (new_start_row != st.session_state[start_row_key] or
+                    new_end_row != st.session_state[end_row_key]):
+                st.session_state[start_row_key] = new_start_row
+                st.session_state[end_row_key] = new_end_row
+                selection_changed = True
+        else:
+            # If no selection, default to full range
+            if st.session_state[start_row_key] != 0 or st.session_state[end_row_key] != len(df) - 1:
+                st.session_state[start_row_key] = 0
+                st.session_state[end_row_key] = len(df) - 1
+                selection_changed = True
+
+        # Retrieve current values from session state
+        start_row = st.session_state[start_row_key]
+        end_row = st.session_state[end_row_key]
+        start_col = st.session_state[start_col_key]
+        end_col = st.session_state[end_col_key]
 
         # Display the current selection
         st.write(f"Selected range: Rows {start_row} to {
@@ -53,19 +100,74 @@ def edit_excel():
 
         col1, col2 = st.columns(2)
         with col1:
-            start_row = st.number_input(f"Start Row for {
-                                        current_sheet}", min_value=0, max_value=len(df)-1, value=start_row)
-            end_row = st.number_input(f"End Row for {
-                                      current_sheet}", min_value=start_row, max_value=len(df)-1, value=end_row)
+            start_row_input = st.number_input(
+                f"Start Row for {current_sheet}",
+                min_value=0,
+                max_value=len(df)-1,
+                value=start_row,
+                key=f"{start_row_key}_input"
+            )
+            end_row_input = st.number_input(
+                f"End Row for {current_sheet}",
+                min_value=start_row_input,
+                max_value=len(df)-1,
+                value=end_row,
+                key=f"{end_row_key}_input"
+            )
         with col2:
-            start_col = st.number_input(f"Start Column for {
-                                        current_sheet}", min_value=0, max_value=len(df.columns)-1, value=start_col)
-            end_col = st.number_input(f"End Column for {
-                                      current_sheet}", min_value=start_col, max_value=len(df.columns)-1, value=end_col)
+            start_col_input = st.number_input(
+                f"Start Column for {current_sheet}",
+                min_value=0,
+                max_value=len(df.columns)-1,
+                value=start_col,
+                key=f"{start_col_key}_input"
+            )
+            end_col_input = st.number_input(
+                f"End Column for {current_sheet}",
+                min_value=start_col_input,
+                max_value=len(df.columns)-1,
+                value=end_col,
+                key=f"{end_col_key}_input"
+            )
+
+        # Update session state if number inputs changed
+        inputs_changed = False
+        if (start_row_input != st.session_state[start_row_key] or
+                end_row_input != st.session_state[end_row_key]):
+            st.session_state[start_row_key] = start_row_input
+            st.session_state[end_row_key] = end_row_input
+            inputs_changed = True
+
+        if inputs_changed or selection_changed:
+            # Rebuild grid options with pre-selected rows
+            pre_selected_indices = list(range(
+                int(st.session_state[start_row_key]), int(st.session_state[end_row_key]) + 1))
+
+            gb = GridOptionsBuilder.from_dataframe(df)
+            gb.configure_selection(
+                selection_mode='multiple',
+                use_checkbox=True,
+                pre_selected_rows=pre_selected_indices
+            )
+            grid_options = gb.build()
+
+            # Display the grid with updated selection
+            grid_response = AgGrid(
+                df,
+                gridOptions=grid_options,
+                data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+                update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.VALUE_CHANGED,
+                fit_columns_on_grid_load=True,
+                allow_unsafe_jscode=True,
+                reload_data=True,
+                key=f"{current_sheet}_aggrid"
+            )
 
         if st.button(f"View markdown preview of {current_sheet}"):
-            selected_df = edited_df.iloc[start_row:end_row +
-                                         1, start_col:end_col+1]
+            selected_df = df.iloc[
+                int(st.session_state[start_row_key]):int(st.session_state[end_row_key])+1,
+                int(st.session_state[start_col_key]):int(st.session_state[end_col_key])+1
+            ]
             markdown = dataframe_to_markdown(selected_df)
             st.markdown(markdown)
             st.download_button(
