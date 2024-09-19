@@ -2,6 +2,8 @@ import streamlit as st
 from utils import load_excel_file
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
+from components.inputs_files_selector import input_files_selector
+
 
 def column_to_doc():
     file_name = st.query_params.get("file")
@@ -63,4 +65,5 @@ def generate_markdown(df, question_column, answer_column):
     return markdown
 
 if __name__ == "__main__":
+    input_files_selector(mode="select")
     column_to_doc()
