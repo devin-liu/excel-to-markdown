@@ -34,19 +34,27 @@ def column_to_doc():
         fit_columns_on_grid_load=True,
         allow_unsafe_jscode=True,
         reload_data=False,
-        key=f"{sheet_name}_aggrid"
+        key=f"{sheet_name}_aggrid",
     )
+
+    # row selection
+    rows = df.index.tolist()
+    row_selector = st.selectbox(
+        "Select the row to start generating the markdown from", rows)
 
     # Column selection
     columns = df.columns.tolist()
-    question_column = st.selectbox("Select the question column", columns)
-    answer_column = st.selectbox("Select the answer column", columns)
+    question_column = st.selectbox(
+        "Select the question column", columns, index=row_selector)
+    answer_column = st.selectbox(
+        "Select the answer column", columns, index=row_selector)
 
     if st.button("Generate Markdown Preview"):
         if question_column == answer_column:
             st.error("Please select different columns for questions and answers.")
         else:
-            markdown = generate_markdown(df, question_column, answer_column)
+            markdown = generate_markdown(
+                df, question_column, answer_column, row_selector)
             st.markdown("### Markdown Preview")
             st.markdown(markdown)
             st.download_button(
@@ -57,9 +65,11 @@ def column_to_doc():
             )
 
 
-def generate_markdown(df, question_column, answer_column):
+def generate_markdown(df, question_column, answer_column, row_selector):
     markdown = ""
     for _, row in df.iterrows():
+        if _ < row_selector:
+            continue
         question = row[question_column]
         answer = row[answer_column]
         if pd.notna(question) and pd.notna(answer):
