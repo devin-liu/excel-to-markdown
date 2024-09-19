@@ -3,10 +3,12 @@ from pathlib import Path
 import os
 from urllib.parse import urlencode
 
+
 def input_files_selector(mode="link"):
     # Get the list of files in the data/input directory
     input_dir = Path("data/input")
-    input_files = [f for f in os.listdir(input_dir) if f.endswith(('.xlsx', '.xls'))]
+    input_files = [f for f in os.listdir(
+        input_dir) if f.endswith(('.xlsx', '.xls'))]
 
     # Display the list of files using Streamlit
     st.header("Excel Files in data/input")
@@ -17,10 +19,7 @@ def input_files_selector(mode="link"):
             elif mode == "select":
                 if st.button(f"Select {file}"):
                     st.query_params["file"] = file
-                    st.rerun()
     else:
         st.write("No Excel files found in the input directory.")
 
-# Usage:
-# input_files_selector()  # Default "link" mode
-# input_files_selector(mode="select")  # "select" mode
+    

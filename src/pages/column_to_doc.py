@@ -3,6 +3,7 @@ from utils import load_excel_file
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
+from components.sheet_selector import sheet_selector
 
 
 def column_to_doc():
@@ -55,6 +56,7 @@ def column_to_doc():
                 mime="text/markdown"
             )
 
+
 def generate_markdown(df, question_column, answer_column):
     markdown = ""
     for _, row in df.iterrows():
@@ -64,6 +66,10 @@ def generate_markdown(df, question_column, answer_column):
             markdown += f"## {question}\n\n{answer}\n\n"
     return markdown
 
+
 if __name__ == "__main__":
     input_files_selector(mode="select")
-    column_to_doc()
+    if "file" in st.query_params:
+        sheet_selector()
+    if "file" in st.query_params and "sheet" in st.query_params:
+        column_to_doc()
