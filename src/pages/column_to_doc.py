@@ -24,6 +24,7 @@ def column_to_doc():
 
     # Display the grid
     gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_default_column(editable=True)  # Make all columns editable
     grid_options = gb.build()
 
     grid_response = AgGrid(
@@ -35,34 +36,54 @@ def column_to_doc():
         allow_unsafe_jscode=True,
         reload_data=False,
         key=f"{sheet_name}_aggrid",
+        editable=True,  # Enable editing for the entire grid
     )
 
+    # Update the dataframe with edited values
+    df = grid_response['data']
+
     # row selection
-    rows = df.index.tolist()
+    rows = df.index.to_list()
     row_selector = st.selectbox(
         "Select the row to start generating the markdown from", rows)
 
     # Column selection
     columns = df.columns.tolist()
     question_column = st.selectbox(
-        "Select the question column", columns, index=row_selector)
+        "Select the question column", columns)
     answer_column = st.selectbox(
-        "Select the answer column", columns, index=row_selector)
+        "Select the answer column", columns)
+
+    # Handle both integer and label-based indices
+    if isinstance(df.index, pd.RangeIndex):
+        # If index is a default RangeIndex, use the selected value directly
+        row_index = row_selector
+    else:
+        # If index is not a default RangeIndex, find the integer location
+        row_index = df.index.get_loc(row_selector)
+
+    first_answer_column_value = df.iloc[row_index][answer_column]
+    default_file_name = f"{first_answer_column_value}_qa"
+
+    file_name_input = st.text_input(
+        "Enter the file name for the markdown document", value=default_file_name)
+    markdown_file_name = file_name_input + ".md"
 
     if st.button("Generate Markdown Preview"):
         if question_column == answer_column:
             st.error("Please select different columns for questions and answers.")
         else:
+
             markdown = generate_markdown(
                 df, question_column, answer_column, row_selector)
-            st.markdown("### Markdown Preview")
-            st.markdown(markdown)
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
-                file_name=f"{sheet_name}_qa.md",
+                file_name=markdown_file_name,
                 mime="text/markdown"
             )
+            st.markdown("### Markdown Preview")
+            st.markdown(markdown)
 
 
 def generate_markdown(df, question_column, answer_column, row_selector):

@@ -19,7 +19,6 @@ def input_files_selector(mode="link"):
             elif mode == "select":
                 if st.button(f"Select {file}"):
                     st.query_params["file"] = file
+                    st.success(f"Selected file: {file}")
     else:
         st.write("No Excel files found in the input directory.")
-
-    
