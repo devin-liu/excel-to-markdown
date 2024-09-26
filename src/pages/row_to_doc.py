@@ -52,6 +52,8 @@ def row_to_doc():
 
     df = grid_response['data']
 
+    selected_rows_df = None
+
     # if a row is selected, is not None, and is not empty, show the row
     if grid_response['selected_rows'] is not None and not grid_response['selected_rows'].empty:
         # make a df from the selected rows, with the first row as the header
@@ -100,38 +102,43 @@ def row_to_doc():
 
     # Row selection for question and answer
     # Only rows with questions
-    question_rows = selected_rows_df.index.to_list()  # All rows for answers
-    question_row_selector = st.selectbox(
-        "Select the row for the question", question_rows)
 
-    answer_rows = selected_rows_df.index.to_list()  # All rows for answers
-    answer_row_selector = st.selectbox(
-        "Select the row for the answers", answer_rows)
+    if selected_rows_df is not None:
 
-    question_row_index = selected_rows_df.index.get_loc(question_row_selector)
-    answer_row_index = selected_rows_df.index.get_loc(answer_row_selector)
+        question_rows = selected_rows_df.index.to_list()  # All rows for answers
+        question_row_selector = st.selectbox(
+            "Select the row for the question", question_rows)
 
-    first_question_column_value = selected_rows_df.iloc[question_row_index][question_column]
-    default_file_name = f"{sheet_name}_{first_question_column_value}"
+        answer_rows = selected_rows_df.index.to_list()  # All rows for answers
+        answer_row_selector = st.selectbox(
+            "Select the row for the answers", answer_rows)
 
-    file_name_input = st.text_input(
-        "Enter the file name for the markdown document", value=default_file_name)
-    markdown_file_name = file_name_input + ".md"
+        question_row_index = selected_rows_df.index.get_loc(
+            question_row_selector)
+        answer_row_index = selected_rows_df.index.get_loc(answer_row_selector)
 
-    if st.button("Generate Markdown Preview"):
-        if question_column in answer_columns:
-            st.error("Please select different columns for questions and answers.")
-        else:
-            markdown = generate_markdown(
-                selected_rows_df, first_question_column_value, answer_columns, question_row_index, answer_row_index)
-            st.download_button(
-                label="Download Markdown",
-                data=markdown,
-                file_name=sanitize_filename(markdown_file_name),
-                mime="text/markdown"
-            )
-            st.markdown("### Markdown Preview")
-            st.markdown(markdown)
+        first_question_column_value = selected_rows_df.iloc[question_row_index][question_column]
+        default_file_name = f"{sheet_name}_{first_question_column_value}"
+
+        file_name_input = st.text_input(
+            "Enter the file name for the markdown document", value=default_file_name)
+        markdown_file_name = file_name_input + ".md"
+
+        if st.button("Generate Markdown Preview"):
+            if question_column in answer_columns:
+                st.error(
+                    "Please select different columns for questions and answers.")
+            else:
+                markdown = generate_markdown(
+                    selected_rows_df, first_question_column_value, answer_columns, question_row_index, answer_row_index)
+                st.download_button(
+                    label="Download Markdown",
+                    data=markdown,
+                    file_name=sanitize_filename(markdown_file_name),
+                    mime="text/markdown"
+                )
+                st.markdown("### Markdown Preview")
+                st.markdown(markdown)
 
 
 # Updated parameter name
