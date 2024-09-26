@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 
-def column_to_doc():
+def row_to_doc():
     file_name = st.query_params.get("file")
     sheet_name = st.query_params.get("sheet")
 
@@ -24,7 +24,7 @@ def column_to_doc():
         return
 
     df = wb[sheet_name]
-    st.subheader(f"Column to Document - {sheet_name}")
+    st.subheader(f"Row to Document - {sheet_name}")
 
     # Display the grid
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -46,82 +46,89 @@ def column_to_doc():
     # Update the dataframe with edited values
     df = grid_response['data']
 
-    # row selection
-    rows = df.index.to_list()
-    row_selector = st.selectbox(
-        "Select the row to start generating the markdown from", rows)
-
     # Column selection
     columns = df.columns.tolist()
     question_column = st.selectbox(
-        "Select the question column", columns)
-    answer_column = st.selectbox(
-        "Select the answer column", columns)
+        "Select the question label column", columns)
 
-    # Handle both integer and label-based indices
+    # Select the starting column for answers
+    start_column = st.selectbox(
+        "Select the starting column for answers", columns)
+
+    # Determine valid ending columns based on the selected start column
+    start_index = columns.index(start_column)
+    # All columns from the start column to the end
+    valid_answer_columns = columns[start_index:]
+
+    answer_columns = st.multiselect(  # Allow multiple answer columns selection
+        # Default to the first valid column
+        "Select the answer columns", valid_answer_columns, default=[valid_answer_columns[0]])
+
+    # Row selection for question and answer
+    # Only rows with questions
+    question_rows = df[df[question_column].notna()].index.to_list()
+    question_row_selector = st.selectbox(
+        "Select the row for the question", question_rows)
+
+    answer_rows = df.index.to_list()  # All rows for answers
+    answer_row_selector = st.selectbox(
+        "Select the row for the answers", answer_rows)
+
+    # Handle both integer and label-based indices for question and answer rows
     if isinstance(df.index, pd.RangeIndex):
-        # If index is a default RangeIndex, use the selected value directly
-        row_index = row_selector
+        # If index is a default RangeIndex, use the selected values directly
+        question_row_index = question_row_selector
+        answer_row_index = answer_row_selector
     else:
         # If index is not a default RangeIndex, find the integer location
-        row_index = df.index.get_loc(row_selector)
+        question_row_index = df.index.get_loc(question_row_selector)
+        answer_row_index = df.index.get_loc(answer_row_selector)
 
-    first_answer_column_value = df.iloc[row_index][answer_column]
-    default_file_name = f"{first_answer_column_value}_qa"
+    first_question_column_value = df.iloc[question_row_index][question_column]
+    default_file_name = f"{first_question_column_value}"
 
     file_name_input = st.text_input(
         "Enter the file name for the markdown document", value=default_file_name)
     markdown_file_name = file_name_input + ".md"
 
-    # make a smaller dataframe that removes the columns before the answer column
-    answer_columns = df.columns[df.columns.get_loc(answer_column):]
-
-    # create a button to iterate through the columns and generate a markdown file for each column
+    # create a button to iterate through the columns and combine into a markdown file
 
     if st.button(f"Generate {len(answer_columns)} markdown files"):
-        if question_column == answer_column:
+        if question_column in answer_columns:
             st.error("Please select different columns for questions and answers.")
         else:
             for column in answer_columns:
-                # get the value of the row at the row_index for the current column
-                file_name = df.iloc[row_index][column]
+                # Get the value of the row at the answer_row_index for the current column
+                file_name = df.iloc[answer_row_index][column]
                 file_name = f"{file_name}_qa.md"
                 markdown = generate_markdown(
-                    # Convert row_index to int
-                    df, question_column, column, row_index)
+                    df, question_column, answer_columns, question_row_selector, answer_row_index)
 
-                # download the markdown file
-
+                # Download the markdown file
                 output_dir = "./data/output/"
 
-                # sanitize the file name to remove special characters using a library
+                # Sanitize the file name to remove special characters
                 file_name = sanitize_filename(file_name)
 
                 full_file_name = output_dir + file_name
 
-                # check if directory exists
+                # Check if directory exists
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
 
-                # check if file exists
-                # create the file if it doesn't exist
+                # Check if file exists and create the file if it doesn't exist
                 if not os.path.exists(full_file_name):
                     with open(full_file_name, "w") as f:
                         f.write(markdown)
                 else:
                     st.error(f"File {file_name} already exists.")
-        
 
     if st.button("Generate Markdown Preview"):
-        if question_column == answer_column:
+        if question_column in answer_columns:
             st.error("Please select different columns for questions and answers.")
         else:
-
-            # fill NA values in the answer column with empty strings
-            df[answer_column] = df[answer_column].fillna("")
-
             markdown = generate_markdown(
-                df, question_column, answer_column, row_selector)
+                df, question_column, answer_columns, question_row_selector, answer_row_selector)
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
@@ -132,15 +139,18 @@ def column_to_doc():
             st.markdown(markdown)
 
 
-def generate_markdown(df, question_column, answer_column, row_selector):
+def generate_markdown(df, question_column, answer_columns, question_row_selector, answer_row_selector):  # Updated parameter name
     markdown = ""
-    for _, row in df.iterrows():
-        if int(_) < int(row_selector):
-            continue
-        question = row[question_column]
-        answer = row[answer_column]
-        if pd.notna(question) and pd.notna(answer):
-            markdown += f"## {question}\n\n{answer}\n\n"
+    # Extract the question from the specified row
+    question = df.iloc[question_row_selector][question_column]
+    markdown += f"## {question}\n\n"
+
+    # Iterate through the selected answer columns
+    for column in answer_columns:  # Use answer_columns instead of answer_column
+        answer = df.iloc[answer_row_selector][column]  # Use answer_row_selector for the answer row
+        if pd.notna(answer):
+            markdown += f"{column}: {answer}\n"
+
     return markdown
 
 
@@ -158,4 +168,4 @@ if __name__ == "__main__":
     if "file" in st.query_params:
         sheet_selector()
     if "file" in st.query_params and "sheet" in st.query_params:
-        column_to_doc()
+        row_to_doc()
