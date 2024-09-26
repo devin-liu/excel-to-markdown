@@ -10,6 +10,28 @@ import re
 from pathlib import Path
 
 
+def create_aggrid(df, sheet_name, selection_mode='multiple'):
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_default_column(editable=True)  # Make all columns editable
+    gb.configure_selection(selection_mode=selection_mode, use_checkbox=True)
+
+    grid_options = gb.build()
+
+    grid_response = AgGrid(
+        df,
+        gridOptions=grid_options,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
+        fit_columns_on_grid_load=True,
+        allow_unsafe_jscode=True,
+        reload_data=False,
+        key=f"{sheet_name}_aggrid",
+        editable=True,  # Enable editing for the entire grid
+    )
+
+    return grid_response
+
+
 def row_to_doc():
     file_name = st.query_params.get("file")
     sheet_name = st.query_params.get("sheet")
@@ -26,25 +48,41 @@ def row_to_doc():
     df = wb[sheet_name]
     st.subheader(f"Row to Document - {sheet_name}")
 
-    # Display the grid
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(editable=True)  # Make all columns editable
-    grid_options = gb.build()
+    grid_response = create_aggrid(df, sheet_name)
 
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        fit_columns_on_grid_load=True,
-        allow_unsafe_jscode=True,
-        reload_data=False,
-        key=f"{sheet_name}_aggrid",
-        editable=True,  # Enable editing for the entire grid
-    )
-
-    # Update the dataframe with edited values
     df = grid_response['data']
+
+    # if a row is selected, is not None, and is not empty, show the row
+    if grid_response['selected_rows'] is not None and not grid_response['selected_rows'].empty:
+        # make a df from the selected rows, with the first row as the header
+        # the first column as the index
+        selected_rows_df = pd.DataFrame(grid_response['selected_rows'])
+        selected_rows_df.set_index(selected_rows_df.columns[0], inplace=True)
+
+        pinned_columns = [
+            column for column in grid_response['columns_state'] if column['pinned'] is not None]
+
+        # st.write(pinned_columns)
+        if pinned_columns:  # Check if there are pinned columns
+            # Get the ID of the first pinned column
+            st.write(pinned_columns)
+            first_pinned_column = pinned_columns[0]['colId']
+
+            # get the location of the first pinned column
+            first_index = selected_rows_df.columns.get_loc(first_pinned_column)
+
+            st.write(first_index)
+
+            # Keep columns from the first pinned column onward
+            selected_rows_df = selected_rows_df.iloc[:, first_index:]
+
+            st.write(first_pinned_column)
+
+        # use the first pinned column as the start of selected_rows_df, remove columns to the left
+
+        st.write(selected_rows_df)
+
+        # st.write(grid_response['selected_rows'])
 
     # Column selection
     columns = df.columns.tolist()
@@ -62,26 +100,19 @@ def row_to_doc():
 
     # Row selection for question and answer
     # Only rows with questions
-    question_rows = df[df[question_column].notna()].index.to_list()
+    question_rows = selected_rows_df.index.to_list()  # All rows for answers
     question_row_selector = st.selectbox(
         "Select the row for the question", question_rows)
 
-    answer_rows = df.index.to_list()  # All rows for answers
+    answer_rows = selected_rows_df.index.to_list()  # All rows for answers
     answer_row_selector = st.selectbox(
         "Select the row for the answers", answer_rows)
 
-    # Handle both integer and label-based indices for question and answer rows
-    if isinstance(df.index, pd.RangeIndex):
-        # If index is a default RangeIndex, use the selected values directly
-        question_row_index = question_row_selector
-        answer_row_index = answer_row_selector
-    else:
-        # If index is not a default RangeIndex, find the integer location
-        question_row_index = df.index.get_loc(question_row_selector)
-        answer_row_index = df.index.get_loc(answer_row_selector)
+    question_row_index = selected_rows_df.index.get_loc(question_row_selector)
+    answer_row_index = selected_rows_df.index.get_loc(answer_row_selector)
 
-    first_question_column_value = df.iloc[question_row_index][question_column]
-    default_file_name = f"{first_question_column_value}"
+    first_question_column_value = selected_rows_df.iloc[question_row_index][question_column]
+    default_file_name = f"{sheet_name}_{first_question_column_value}"
 
     file_name_input = st.text_input(
         "Enter the file name for the markdown document", value=default_file_name)
@@ -92,11 +123,11 @@ def row_to_doc():
             st.error("Please select different columns for questions and answers.")
         else:
             markdown = generate_markdown(
-                df, question_column, answer_columns, question_row_selector, answer_row_selector)
+                selected_rows_df, first_question_column_value, answer_columns, question_row_index, answer_row_index)
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
-                file_name=markdown_file_name,
+                file_name=sanitize_filename(markdown_file_name),
                 mime="text/markdown"
             )
             st.markdown("### Markdown Preview")
@@ -104,10 +135,9 @@ def row_to_doc():
 
 
 # Updated parameter name
-def generate_markdown(df, question_column, answer_columns, question_row_selector, answer_row_selector):
+def generate_markdown(df, question, answer_columns, question_row_selector, answer_row_selector):
     markdown = ""
     # Extract the question from the specified row
-    question = df.iloc[question_row_selector][question_column]
     markdown += f"## {question}\n\n"
 
     # Iterate through the selected answer columns
