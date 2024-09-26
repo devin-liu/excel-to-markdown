@@ -58,11 +58,7 @@ def row_to_doc():
     # Determine valid ending columns based on the selected start column
     start_index = columns.index(start_column)
     # All columns from the start column to the end
-    valid_answer_columns = columns[start_index:]
-
-    answer_columns = st.multiselect(  # Allow multiple answer columns selection
-        # Default to the first valid column
-        "Select the answer columns", valid_answer_columns, default=[valid_answer_columns[0]])
+    answer_columns = columns[start_index:]
 
     # Row selection for question and answer
     # Only rows with questions
@@ -91,38 +87,6 @@ def row_to_doc():
         "Enter the file name for the markdown document", value=default_file_name)
     markdown_file_name = file_name_input + ".md"
 
-    # create a button to iterate through the columns and combine into a markdown file
-
-    if st.button(f"Generate {len(answer_columns)} markdown files"):
-        if question_column in answer_columns:
-            st.error("Please select different columns for questions and answers.")
-        else:
-            for column in answer_columns:
-                # Get the value of the row at the answer_row_index for the current column
-                file_name = df.iloc[answer_row_index][column]
-                file_name = f"{file_name}_qa.md"
-                markdown = generate_markdown(
-                    df, question_column, answer_columns, question_row_selector, answer_row_index)
-
-                # Download the markdown file
-                output_dir = "./data/output/"
-
-                # Sanitize the file name to remove special characters
-                file_name = sanitize_filename(file_name)
-
-                full_file_name = output_dir + file_name
-
-                # Check if directory exists
-                if not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
-
-                # Check if file exists and create the file if it doesn't exist
-                if not os.path.exists(full_file_name):
-                    with open(full_file_name, "w") as f:
-                        f.write(markdown)
-                else:
-                    st.error(f"File {file_name} already exists.")
-
     if st.button("Generate Markdown Preview"):
         if question_column in answer_columns:
             st.error("Please select different columns for questions and answers.")
@@ -139,7 +103,8 @@ def row_to_doc():
             st.markdown(markdown)
 
 
-def generate_markdown(df, question_column, answer_columns, question_row_selector, answer_row_selector):  # Updated parameter name
+# Updated parameter name
+def generate_markdown(df, question_column, answer_columns, question_row_selector, answer_row_selector):
     markdown = ""
     # Extract the question from the specified row
     question = df.iloc[question_row_selector][question_column]
@@ -147,9 +112,11 @@ def generate_markdown(df, question_column, answer_columns, question_row_selector
 
     # Iterate through the selected answer columns
     for column in answer_columns:  # Use answer_columns instead of answer_column
-        answer = df.iloc[answer_row_selector][column]  # Use answer_row_selector for the answer row
+        # Use answer_row_selector for the answer row
+        answer = df.iloc[answer_row_selector][column]
+        value = df.iloc[question_row_selector][column]
         if pd.notna(answer):
-            markdown += f"{column}: {answer}\n"
+            markdown += f"{answer}: {value}\n\n"
 
     return markdown
 
