@@ -55,106 +55,85 @@ def row_to_doc():
     selected_rows_df = None
 
     # if a row is selected, is not None, and is not empty, show the row
-    if grid_response['selected_rows'] is not None and not grid_response['selected_rows'].empty:
+    if grid_response['selected_rows'] is not None and not pd.DataFrame(grid_response['selected_rows']).empty:
         # make a df from the selected rows, with the first row as the header
         # the first column as the index
         selected_rows_df = pd.DataFrame(grid_response['selected_rows'])
         selected_rows_df.set_index(selected_rows_df.columns[0], inplace=True)
 
         pinned_columns = [
-            column for column in grid_response['columns_state'] if column['pinned'] is not None]
+            column for column in grid_response['columns_state'] if column.get('pinned') is not None]
 
-        # st.write(pinned_columns)
         if pinned_columns:  # Check if there are pinned columns
             # Get the ID of the first pinned column
-            st.write(pinned_columns)
             first_pinned_column = pinned_columns[0]['colId']
 
             # get the location of the first pinned column
             first_index = selected_rows_df.columns.get_loc(first_pinned_column)
 
-            st.write(first_index)
-
             # Keep columns from the first pinned column onward
             selected_rows_df = selected_rows_df.iloc[:, first_index:]
 
-            st.write(first_pinned_column)
-
-        # use the first pinned column as the start of selected_rows_df, remove columns to the left
+            st.write(f"First pinned column: {first_pinned_column}")
+        else:
+            st.warning("Please pin at least one column.")
+            return
 
         st.write(selected_rows_df)
 
-        # st.write(grid_response['selected_rows'])
+    else:
+        st.warning("Please select at least one row and pin at least one column.")
+        return
 
     # Column selection
-    columns = df.columns.tolist()
-    question_column = st.selectbox(
-        "Select the question label column", columns)
+    columns = selected_rows_df.columns.tolist()
 
     # Select the starting column for answers
     start_column = st.selectbox(
         "Select the starting column for answers", columns)
 
-    # Determine valid ending columns based on the selected start column
+    # Determine valid answer columns based on the selected start column
     start_index = columns.index(start_column)
-    # All columns from the start column to the end
     answer_columns = columns[start_index:]
 
-    # Row selection for question and answer
-    # Only rows with questions
+    # Row selection for answer labels
+    answer_rows = selected_rows_df.index.tolist()
+    answer_row_selector = st.selectbox(
+        "Select the row for the answer labels", answer_rows)
 
-    if selected_rows_df is not None:
+    answer_row_index = selected_rows_df.index.get_loc(answer_row_selector)
 
-        question_rows = selected_rows_df.index.to_list()  # All rows for answers
-        question_row_selector = st.selectbox(
-            "Select the row for the question", question_rows)
+    default_file_name = f"{sheet_name}_document"
 
-        answer_rows = selected_rows_df.index.to_list()  # All rows for answers
-        answer_row_selector = st.selectbox(
-            "Select the row for the answers", answer_rows)
+    file_name_input = st.text_input(
+        "Enter the file name for the markdown document", value=default_file_name)
+    markdown_file_name = file_name_input + ".md"
 
-        question_row_index = selected_rows_df.index.get_loc(
-            question_row_selector)
-        answer_row_index = selected_rows_df.index.get_loc(answer_row_selector)
+    if st.button("Generate Markdown Preview"):
+        markdown = ""
+        for idx in range(answer_row_index + 1, len(selected_rows_df)):
+            row = selected_rows_df.iloc[idx]
+            question = row[first_pinned_column]
+            answers = row[answer_columns]
+            answer_labels = selected_rows_df.loc[answer_row_selector,
+                                                 answer_columns]
+            markdown += generate_markdown(question, answers, answer_labels)
 
-        first_question_column_value = selected_rows_df.iloc[question_row_index][question_column]
-        default_file_name = f"{sheet_name}_{first_question_column_value}"
-
-        file_name_input = st.text_input(
-            "Enter the file name for the markdown document", value=default_file_name)
-        markdown_file_name = file_name_input + ".md"
-
-        if st.button("Generate Markdown Preview"):
-            if question_column in answer_columns:
-                st.error(
-                    "Please select different columns for questions and answers.")
-            else:
-                markdown = generate_markdown(
-                    selected_rows_df, first_question_column_value, answer_columns, question_row_index, answer_row_index)
-                st.download_button(
-                    label="Download Markdown",
-                    data=markdown,
-                    file_name=sanitize_filename(markdown_file_name),
-                    mime="text/markdown"
-                )
-                st.markdown("### Markdown Preview")
-                st.markdown(markdown)
+        st.download_button(
+            label="Download Markdown",
+            data=markdown,
+            file_name=sanitize_filename(markdown_file_name),
+            mime="text/markdown"
+        )
+        st.markdown("### Markdown Preview")
+        st.markdown(markdown)
 
 
-# Updated parameter name
-def generate_markdown(df, question, answer_columns, question_row_selector, answer_row_selector):
-    markdown = ""
-    # Extract the question from the specified row
-    markdown += f"## {question}\n\n"
-
-    # Iterate through the selected answer columns
-    for column in answer_columns:  # Use answer_columns instead of answer_column
-        # Use answer_row_selector for the answer row
-        answer = df.iloc[answer_row_selector][column]
-        value = df.iloc[question_row_selector][column]
+def generate_markdown(question, answers, answer_labels):
+    markdown = f"## {question}\n\n"
+    for label, answer in zip(answer_labels, answers):
         if pd.notna(answer):
-            markdown += f"{answer}: {value}\n\n"
-
+            markdown += f"**{label}**: {answer}\n\n"
     return markdown
 
 
