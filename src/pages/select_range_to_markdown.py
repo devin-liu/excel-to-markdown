@@ -5,46 +5,24 @@ from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
 from utils import get_file_and_sheet
 
-def create_aggrid(df, selection_mode='multiple'):
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(editable=True)
-    gb.configure_selection(selection_mode=selection_mode, use_checkbox=True)
-    grid_options = gb.build()
-
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        fit_columns_on_grid_load=True,
-        key="aggrid",
-        editable=True,
-    )
-    return grid_response
-
-
-def generate_markdown(selected_rows_df):
-    markdown = ""
-    for index, row in selected_rows_df.iterrows():
-        markdown += f"## {row[0]}\n\n"
-        for col_name, value in row.iteritems():
-            if pd.notna(value):
-                markdown += f"**{col_name}**: {value}\n\n"
-    return markdown
-
 
 def select_range_to_markdown():
     st.title("Select Range to Markdown")
 
     df, sheet_name = get_file_and_sheet()
-    
+
+    # Use the first row as values
+    df = df.reset_index(drop=True)
+    # Convert column names to strings
+    df.columns = [str(i) for i in range(len(df.columns))]
+
     st.subheader(f"Row to Document - {sheet_name}")
 
     grid_response = create_aggrid(df, sheet_name)
 
     selected_rows = grid_response['selected_rows']
 
-    if selected_rows:
+    if selected_rows is not None and len(selected_rows) > 0:
         selected_rows_df = pd.DataFrame(selected_rows)
         st.write("Selected Rows:")
         st.dataframe(selected_rows_df)
@@ -62,6 +40,40 @@ def select_range_to_markdown():
             )
     else:
         st.info("Please select at least one row to generate Markdown.")
+
+
+def generate_markdown(selected_rows_df):
+    markdown = ""
+    for index, row in selected_rows_df.iterrows():
+        markdown += f"## {row[0]}\n\n"
+        for col_name, value in row.items():
+            if pd.notna(value):
+                markdown += f"**{col_name}**: {value}\n\n"
+    return markdown
+
+
+def create_aggrid(df, sheet_name, selection_mode='multiple'):
+    # Ensure column names are strings
+    df.columns = df.columns.astype(str)
+
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_default_column(editable=True)
+    gb.configure_selection(selection_mode=selection_mode, use_checkbox=True)
+
+    grid_options = gb.build()
+
+    grid_response = AgGrid(
+        df,  # Include all rows in the grid
+        gridOptions=grid_options,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        update_mode=GridUpdateMode.MODEL_CHANGED,
+        fit_columns_on_grid_load=True,
+        # Use sheet_name in the key to make it unique
+        key=f"aggrid_{sheet_name}",
+        editable=True,
+    )
+
+    return grid_response
 
 
 if __name__ == "__main__":
