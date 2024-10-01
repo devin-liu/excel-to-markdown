@@ -3,18 +3,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
-
-
-def load_excel_file(file_name):
-    # Implement your file loading logic here
-    # For this template, we'll use a placeholder DataFrame
-    df = pd.DataFrame({
-        'Column1': ['Q1', 'Q2', 'Q3'],
-        'Column2': ['A1', 'A2', 'A3'],
-        'Column3': ['B1', 'B2', 'B3']
-    })
-    return {'Sheet1': df}
-
+from utils import get_file_and_sheet
 
 def create_aggrid(df, selection_mode='multiple'):
     gb = GridOptionsBuilder.from_dataframe(df)
@@ -47,19 +36,8 @@ def generate_markdown(selected_rows_df):
 def select_range_to_markdown():
     st.title("Select Range to Markdown")
 
-    file_name = st.query_params.get("file")
-    sheet_name = st.query_params.get("sheet")
-
-    wb = load_excel_file(file_name)
-    if wb is None:
-        st.error("File not found.")
-        return
-
-    if sheet_name not in wb:
-        st.error(f"Sheet '{sheet_name}' not found in the file.")
-        return
-
-    df = wb[sheet_name]
+    df, sheet_name = get_file_and_sheet()
+    
     st.subheader(f"Row to Document - {sheet_name}")
 
     grid_response = create_aggrid(df, sheet_name)
@@ -92,4 +70,3 @@ if __name__ == "__main__":
         sheet_selector()
     if "file" in st.query_params and "sheet" in st.query_params:
         select_range_to_markdown()
-    

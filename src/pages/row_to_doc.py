@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import load_excel_file
+from utils import get_file_and_sheet
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
@@ -33,19 +33,7 @@ def create_aggrid(df, sheet_name, selection_mode='multiple'):
 
 
 def row_to_doc():
-    file_name = st.query_params.get("file")
-    sheet_name = st.query_params.get("sheet")
-
-    wb = load_excel_file(file_name)
-    if wb is None:
-        st.error("File not found.")
-        return
-
-    if sheet_name not in wb:
-        st.error(f"Sheet '{sheet_name}' not found in the file.")
-        return
-
-    df = wb[sheet_name]
+    df, sheet_name = get_file_and_sheet()
     st.subheader(f"Row to Document - {sheet_name}")
 
     grid_response = create_aggrid(df, sheet_name)
