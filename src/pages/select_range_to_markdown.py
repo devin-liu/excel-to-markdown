@@ -22,13 +22,20 @@ def select_range_to_markdown():
 
     selected_rows = grid_response['selected_rows']
 
+    default_file_name = f"{sheet_name}_document"
+
+    file_name_input = st.text_input(
+        "Enter the file name for the markdown document", value=default_file_name)
+
     if selected_rows is not None and len(selected_rows) > 0:
         selected_rows_df = pd.DataFrame(selected_rows)
         st.write("Selected Rows:")
         st.dataframe(selected_rows_df)
 
         if st.button("Generate Markdown"):
-            markdown = generate_markdown(selected_rows_df)
+
+            markdown_file_name = file_name_input + ".md"
+            markdown = generate_markdown(selected_rows_df, file_name_input)
             st.markdown("### Markdown Preview")
             st.markdown(markdown)
 
@@ -37,15 +44,17 @@ def select_range_to_markdown():
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
-                file_name="selected_rows.md",
+                file_name=markdown_file_name,
                 mime="text/markdown"
             )
     else:
         st.info("Please select at least one row to generate Markdown.")
 
 
-def generate_markdown(selected_rows_df):
+def generate_markdown(selected_rows_df, title=''):
     markdown = ""
+    if title:
+        markdown += f"## {title}\n\n"
     for index, row in selected_rows_df.iterrows():
         for col_name, value in row.items():
             if pd.notna(value):
