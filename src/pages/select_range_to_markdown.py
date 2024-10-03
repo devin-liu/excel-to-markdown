@@ -32,6 +32,8 @@ def select_range_to_markdown():
             st.markdown("### Markdown Preview")
             st.markdown(markdown)
 
+            # TODO:: add better filename default and input field
+
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
@@ -45,10 +47,9 @@ def select_range_to_markdown():
 def generate_markdown(selected_rows_df):
     markdown = ""
     for index, row in selected_rows_df.iterrows():
-        markdown += f"## {row[0]}\n\n"
         for col_name, value in row.items():
             if pd.notna(value):
-                markdown += f"**{col_name}**: {value}\n\n"
+                markdown += f"{value}\n\n"
     return markdown
 
 

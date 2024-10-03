@@ -1,12 +1,11 @@
 import streamlit as st
-from utils import get_file_and_sheet
+from utils import get_file_and_sheet, sanitize_filename
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
 import io
 import os
-import re
 from pathlib import Path
 
 
@@ -123,15 +122,6 @@ def generate_markdown(question, answers, answer_labels):
         if pd.notna(answer):
             markdown += f"**{label}**: {answer}\n\n"
     return markdown
-
-
-def sanitize_filename(filename):
-    # Remove or replace special characters
-    sanitized = re.sub(r'[^\w\-_\. ]', '', filename)
-    # Replace spaces with underscores
-    sanitized = sanitized.replace(' ', '_')
-    # Ensure the filename is not empty after sanitization
-    return sanitized or 'untitled'
 
 
 if __name__ == "__main__":
