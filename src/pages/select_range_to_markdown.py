@@ -3,11 +3,13 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
-from utils import get_file_and_sheet
+from utils import get_file_and_sheet, sanitize_filename
 
 
 def select_range_to_markdown():
     st.title("Select Range to Markdown")
+
+    st.text("Select rows where values exist")
 
     df, sheet_name = get_file_and_sheet()
 
@@ -16,7 +18,7 @@ def select_range_to_markdown():
     # Convert column names to strings
     df.columns = [str(i) for i in range(len(df.columns))]
 
-    st.subheader(f"Row to Document - {sheet_name}")
+    st.subheader(f"Range to Document - {sheet_name}")
 
     grid_response = create_aggrid(df, sheet_name)
 
@@ -39,12 +41,10 @@ def select_range_to_markdown():
             st.markdown("### Markdown Preview")
             st.markdown(markdown)
 
-            # TODO:: add better filename default and input field
-
             st.download_button(
                 label="Download Markdown",
                 data=markdown,
-                file_name=markdown_file_name,
+                file_name=sanitize_filename(markdown_file_name),
                 mime="text/markdown"
             )
     else:
