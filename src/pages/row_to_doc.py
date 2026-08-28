@@ -4,16 +4,13 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
-import io
-import os
-from pathlib import Path
 
 
 def create_aggrid(df, sheet_name, selection_mode='multiple'):
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(editable=True)
     gb.configure_selection(selection_mode=selection_mode, use_checkbox=True)
-    
+
     # Enable column pinning
     gb.configure_grid_options(enableRangeSelection=True)
     gb.configure_default_column(
@@ -23,15 +20,15 @@ def create_aggrid(df, sheet_name, selection_mode='multiple'):
         filter=True,
         pinned=None,  # This allows columns to be pinned
     )
-    
+
     # Enable side bar for column management (optional but helpful)
     gb.configure_side_bar()
-    
+
     grid_options = gb.build()
-    
+
     # Add pinning capabilities to grid options
     grid_options['enableRangeSelection'] = True
-    
+
     grid_response = AgGrid(
         df,
         gridOptions=grid_options,

@@ -15,8 +15,8 @@ st.header("Markdown Files in data/output")
 if output_files:
     for file in output_files:
         with open(output_dir / file, 'r') as f:
-            content = f.read()         
-        st.write(f"- {file}")    
+            content = f.read()
+        st.write(f"- {file}")
 else:
     st.write("No Markdown files found in the output directory.")
 

@@ -92,7 +92,11 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Iterate through all Excel files in the input directory
-    excel_files = list(input_dir.glob('*.xlsx')) + list(input_dir.glob('*.xls'))
+    # Skip Excel's temp lock files (~$file.xlsx), created while the real file is open
+    excel_files = [
+        f for f in list(input_dir.glob('*.xlsx')) + list(input_dir.glob('*.xls'))
+        if not f.name.startswith('~$')
+    ]
     if not excel_files:
         print(f"No Excel files found in {input_dir}.")
         sys.exit(1)

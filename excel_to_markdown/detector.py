@@ -1,6 +1,5 @@
 # excel_to_markdown/detector.py
 
-import pandas as pd
 
 
 def detect_table_start(df):

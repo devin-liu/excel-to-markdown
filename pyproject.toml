@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A robust Python tool designed to convert Excel files (.xlsx and .xls) into well-formatted Markdown tables."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = { text = "GPL-3.0-only" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -34,9 +34,14 @@ dev = [
     "pytest-mock>=3.0",
     "build",
     "twine",
-    "poetry"
+    "poetry",
+    "ruff>=0.6.0"
 ]
 
 [tool.setuptools]
 py-modules = ["run_streamlit"]
 packages = ["excel_to_markdown", "src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]

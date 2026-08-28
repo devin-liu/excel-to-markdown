@@ -15,7 +15,7 @@ def dataframe_to_markdown(df):
     if df.empty:
         return ""
     # Generate the header row
-    markdown = "| " + " | ".join(df.columns) + " |\n"
+    markdown = "| " + " | ".join(str(col) for col in df.columns) + " |\n"
     # Generate the separator row
     markdown += "| " + " | ".join(["---"] * len(df.columns)) + " |\n"
 

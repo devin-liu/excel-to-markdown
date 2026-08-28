@@ -102,7 +102,6 @@ def test_excel_to_markdown_manual_input(sample_excel_file, mocker):
 
 def test_create_output_filename():
     # Test the utility function for creating output filenames
-    from excel_to_markdown.utils import sanitize_sheet_name, create_output_filename
 
     input_file = Path("/path/to/report.xlsx")
     sheet_name = "Sales Data"

@@ -1,7 +1,6 @@
 import streamlit as st
 from pathlib import Path
 import pandas as pd
-from excel_to_markdown.markdown_generator import dataframe_to_markdown
 
 st.set_page_config(layout="wide")
 

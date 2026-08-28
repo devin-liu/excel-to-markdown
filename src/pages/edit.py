@@ -82,7 +82,7 @@ def edit_excel():
             if st.session_state[start_row_key] != 0 or st.session_state[end_row_key] != len(df) - 1:
                 st.session_state[start_row_key] = 0
                 st.session_state[end_row_key] = len(df) - 1
-                selection_changed = True
+                selection_changed = True  # noqa: F841
 
         # Retrieve current values from session state
         start_row = st.session_state[start_row_key]
@@ -102,7 +102,7 @@ def edit_excel():
                 value=int(start_row),
                 key=f"{start_row_key}_input"
             )
-            end_row_input = st.number_input(
+            end_row_input = st.number_input(  # noqa: F841
                 f"End Row for {current_sheet}",
                 min_value=int(start_row_input),
                 max_value=len(df)-1,
@@ -117,7 +117,7 @@ def edit_excel():
                 value=int(start_col),
                 key=f"{start_col_key}_input"
             )
-            end_col_input = st.number_input(
+            end_col_input = st.number_input(  # noqa: F841
                 f"End Column for {current_sheet}",
                 min_value=int(start_col_input),
                 max_value=len(df.columns)-1,

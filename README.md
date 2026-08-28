@@ -1,7 +1,7 @@
 # EXCEL-TO-MARKDOWN
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue)
-![Python](https://img.shields.io/badge/python-3.1%2B-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 
 **EXCEL-TO-MARKDOWN** is a robust Python tool designed to convert Excel files (`.xlsx` and `.xls`) into well-formatted Markdown tables. Leveraging a modular architecture, this tool offers enhanced table detection capabilities, interactive prompts for handling complex Excel layouts, and seamless integration with various project workflows.
 
@@ -59,8 +59,8 @@ EXCEL-TO-MARKDOWN
   - **`test_parser.py`**
   - **`test_markdown_generator.py`**
   - **`test_main.py`**
-  
-  *Each test file contains unit tests for their respective modules, ensuring functionality and reliability.*
+
+  _Each test file contains unit tests for their respective modules, ensuring functionality and reliability._
 
 ## 🚀 Installation
 
@@ -69,24 +69,53 @@ You can install `excel-to-markdown` directly from this repository using `pip`:
 ```bash
 pip install git+https://github.com/devin-liu/excel-to-markdown.git
 ```
-*Note: This assumes the repository URL is `github.com/devin-liu/excel-to-markdown`.*
 
+_Note: This assumes the repository URL is `github.com/devin-liu/excel-to-markdown`._
 
 ### For Development
 
 If you want to contribute to the project, it is recommended to use [Poetry](https://python-poetry.org/) for managing dependencies and the development environment.
 
 1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/devin-liu/excel-to-markdown.git
     cd excel-to-markdown
     ```
 
-2.  **Install dependencies with Poetry:**
+2.  **Install dependencies with Poetry (isolated virtualenv):**
+
     ```bash
     poetry install
     ```
-This will create a virtual environment and install all the necessary dependencies.
+
+    This creates a dedicated virtualenv (managed by Poetry, not your global/system Python) and installs all dependencies into it — nothing leaks into your global site-packages.
+
+    To include dev tools (pytest, build, twine, poetry) in that same isolated env:
+
+    ```bash
+    poetry install --extras dev
+    ```
+
+    **Alternative: plain `venv` + `pip`**, if you prefer not to use Poetry:
+
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate   # Windows: .venv\Scripts\activate
+    pip install -e .[dev]
+    ```
+
+    > ⚠️ Running `pip install -e .[dev]` without an active virtualenv installs into your global/system Python instead. That's fine if you want it that way (e.g. a throwaway machine or you just want the CLI available everywhere); otherwise activate a virtualenv first. To remove a global install: `pip uninstall excel-to-markdown`.
+
+3.  **Run commands inside the isolated env:**
+    ```bash
+    poetry run excel-to-markdown data/input data/output
+    poetry run pytest
+    ```
+    Or drop into a shell with the env activated:
+    ```bash
+    poetry env activate
+    ```
 
 ## 📋 Usage
 
@@ -99,7 +128,6 @@ This will create a virtual environment and install all the necessary dependencie
 - **`data/input`**: Directory containing your Excel files.
 - **`data/output`**: (Optional) Directory where Markdown files will be saved. If not specified, an `output` folder will be created inside the input directory.
 
-
 ### **Running the Localhost Server**
 
 You can also start a localhost server for real-time editing using the `app` command:
@@ -110,11 +138,30 @@ app
 
 This will start a server on your localhost, allowing you to make edits to your spreadsheets locally and see immediate updates.
 
-### **Running the CLI Script** 
+### **Running the CLI Script**
 
 Execute the main script over CLI using the `excel-to-markdown` command:
 
 ```bash
+excel-to-markdown data/input data/output
+```
+
+### **Running Commands with Poetry**
+
+If you installed via `pip` (globally or in an activated venv), `app` and `excel-to-markdown` are already on your `PATH` — no prefix needed.
+
+If instead you installed dependencies with `poetry install` (see [Installation](#-installation)), the `app` and `excel-to-markdown` commands live inside Poetry's isolated virtualenv, not your shell's `PATH`. Prefix them with `poetry run`:
+
+```bash
+poetry run app
+poetry run excel-to-markdown data/input data/output
+```
+
+Alternatively, activate the virtualenv once per shell session and drop the prefix:
+
+```bash
+poetry env activate
+app
 excel-to-markdown data/input data/output
 ```
 
@@ -175,19 +222,32 @@ Please ensure that your contributions adhere to the existing code style and incl
 
 ## 🧪 Testing
 
-Unit tests are located in the `tests/` directory. To run the tests, first install the development dependencies:
+Unit tests are located in the `tests/` directory. Install dev dependencies into the isolated Poetry env, then run pytest inside it:
+
+```bash
+poetry install --extras dev
+poetry run pytest
+```
+
+**Alternative: plain `pip`** (inside an active virtualenv):
 
 ```bash
 pip install -e .[dev]
-```
-Then run pytest:
-```bash
 pytest
 ```
 
-For contributors using Poetry, you can still run the tests with:
+## 🔍 Linting
+
+[Ruff](https://docs.astral.sh/ruff/) checks for unused imports/variables, redefinitions, and whitespace issues (rules `E`, `F`, `W`; `E501` line-length is ignored). It runs automatically in CI (`check-quality` workflow) on every push/PR to `main`. Run it locally with:
+
 ```bash
-poetry run pytest
+poetry run ruff check .
+```
+
+Add `--fix` to auto-apply the safe fixes:
+
+```bash
+poetry run ruff check . --fix
 ```
 
 ## 📜 License

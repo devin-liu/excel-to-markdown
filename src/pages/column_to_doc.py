@@ -4,10 +4,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode
 import pandas as pd
 from components.inputs_files_selector import input_files_selector
 from components.sheet_selector import sheet_selector
-import io
 import os
 import re
-from pathlib import Path
 
 
 def column_to_doc():
@@ -110,7 +108,7 @@ def column_to_doc():
                         f.write(markdown)
                 else:
                     st.error(f"File {file_name} already exists.")
-        
+
 
     if st.button("Generate Markdown Preview"):
         if question_column == answer_column:
